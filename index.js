@@ -2,23 +2,36 @@ import React from 'react';
 
 import { Plugin } from '@vizality/entities';
 import { patch, unpatch } from '@vizality/patcher';
-import { getModuleByDisplayName, typing } from '@vizality/webpack';
-
+import { getModuleByDisplayName } from '@vizality/webpack';
+var typingConstant;
 const ToggleIcon = require("./components/ToggleIcon")
 
 export default class SilentTyping extends Plugin {
 
     async start () {
-        // literally yoinked this from vz code and modified it :)
-
-        console.log("Enabling typing hook for silent typing.")
-        this.enabledSilentTyping = true;
-        typing.startTyping = (startTyping => channel => setImmediate(() => {
-            if (this.settings.get("silent-typing-enabled", true)){
-                return typing.stopTyping(channel);
+        
+        self = this;
+        function setup(){
+            var { typing } = require('@vizality/webpack');
+            typingConstant = typing;
+            if (!typingConstant || typingConstant == null || typeof(typingConstant) == 'null'){
+                console.warn("Typing is undefined, retrying.");
+                setTimeout(function(){
+                    setup();
+                }, 1000)
+                return;
             }
-            return this.oldStartTyping(channel);
-        }))(this.oldStartTyping = typing.startTyping);
+
+            self.enabledSilentTyping = true;
+            // literally yoinked this from vz code and modified it :)
+            typingConstant.startTyping = (startTyping => channel => setImmediate(() => {
+                if (self.settings.get("silent-typing-enabled", true)){
+                    return typingConstant.stopTyping(channel);
+                }
+                return self.oldStartTyping(channel);
+            }))(self.oldStartTyping = typingConstant.startTyping);
+        }
+        setup();
 
         // inject into that juicy top bar
         
@@ -32,6 +45,8 @@ export default class SilentTyping extends Plugin {
     stop () {
         console.log("Resetting typing hook for silent typing to normal state.")
         unpatch("channel-bar")
-        typing.startTyping = this.oldStartTyping;
+        if (typingConstant){
+            typingConstant.startTyping = this.oldStartTyping;
+        }
     }
 }
