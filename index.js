@@ -48,5 +48,8 @@ export default class SilentTyping extends Plugin {
         if (typingConstant){
             typingConstant.startTyping = this.oldStartTyping;
         }
+        if (typingPatch){
+            typingPatch()
+        }
     }
 }
