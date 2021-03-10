@@ -4,6 +4,7 @@ import { Plugin } from '@vizality/entities';
 import { patch, unpatch } from '@vizality/patcher';
 import { getModuleByDisplayName } from '@vizality/webpack';
 var typingConstant;
+var typingPatch;
 const ToggleIcon = require("./components/ToggleIcon")
 
 export default class SilentTyping extends Plugin {
@@ -36,7 +37,7 @@ export default class SilentTyping extends Plugin {
         // inject into that juicy top bar
         
         const HeaderBarContainer = await getModuleByDisplayName("HeaderBarContainer")
-        patch("channel-bar", HeaderBarContainer.prototype, "render", (args, res)=>{
+        typingPatch = patch("channel-bar", HeaderBarContainer.prototype, "render", (args, res)=>{
             res.props.toolbar.props.children.unshift(<ToggleIcon settings={this.settings} bartype={HeaderBarContainer.Icon}></ToggleIcon>)
             return res;
         })
@@ -44,7 +45,6 @@ export default class SilentTyping extends Plugin {
 
     stop () {
         console.log("Resetting typing hook for silent typing to normal state.")
-        unpatch("channel-bar")
         if (typingConstant){
             typingConstant.startTyping = this.oldStartTyping;
         }
